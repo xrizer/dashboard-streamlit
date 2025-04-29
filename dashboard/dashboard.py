@@ -19,35 +19,62 @@ st.set_page_config(
 # Load data
 @st.cache_data
 def load_data():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_dir, 'main_data.csv')
-    day_df = file_path
-    day_df['dteday'] = pd.to_datetime(day_df['dteday'])
+    try:
+        # Try to find the data file
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(current_dir, 'main_data.csv')
+        
+        # Try alternative paths if file not found
+        if not os.path.exists(file_path):
+            try:
+                # Try loading from data directory
+                file_path = os.path.join(os.path.dirname(current_dir), 'data', 'day.csv')
+                if not os.path.exists(file_path):
+                    # Last resort - try direct path
+                    file_path = 'day.csv'
+            except:
+                file_path = 'day.csv'
+                
+        # Load the CSV file
+        day_df = pd.read_csv(file_path)
+        
+        # Convert date
+        day_df['dteday'] = pd.to_datetime(day_df['dteday'], errors='coerce')
+        
+        # Create month name and day name
+        day_df['month_name'] = day_df['mnth'].apply(lambda x: calendar.month_name[int(x)])
+        weekday_mapping = {
+            0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 
+            4: 'Thursday', 5: 'Friday', 6: 'Saturday'
+        }
+        day_df['weekday_name'] = day_df['weekday'].map(weekday_mapping)
+        
+        # Create season and weather categories
+        season_mapping = {1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'}
+        day_df['season_cat'] = day_df['season'].map(season_mapping)
+        
+        weather_mapping = {
+            1: 'Clear/Few clouds',
+            2: 'Mist/Cloudy',
+            3: 'Light Snow/Rain',
+            4: 'Heavy Rain/Ice/Storm'
+        }
+        day_df['weather_cat'] = day_df['weathersit'].map(weather_mapping)
+        
+        # Create year category
+        day_df['year'] = day_df['yr'].map({0: 2011, 1: 2012})
+        
+        return day_df
     
-    # Create month name and day name
-    day_df['month_name'] = day_df['mnth'].apply(lambda x: calendar.month_name[x])
-    weekday_mapping = {
-        0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 
-        4: 'Thursday', 5: 'Friday', 6: 'Saturday'
-    }
-    day_df['weekday_name'] = day_df['weekday'].map(weekday_mapping)
-    
-    # Create season and weather categories
-    season_mapping = {1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'}
-    day_df['season_cat'] = day_df['season'].map(season_mapping)
-    
-    weather_mapping = {
-        1: 'Clear/Few clouds',
-        2: 'Mist/Cloudy',
-        3: 'Light Snow/Rain',
-        4: 'Heavy Rain/Ice/Storm'
-    }
-    day_df['weather_cat'] = day_df['weathersit'].map(weather_mapping)
-    
-    # Create year category
-    day_df['year'] = day_df['yr'].map({0: 2011, 1: 2012})
-    
-    return day_df
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+        # Return empty DataFrame with expected columns to avoid breaking visualizations
+        return pd.DataFrame({
+            'dteday': [], 'season': [], 'yr': [], 'mnth': [], 'holiday': [], 
+            'weekday': [], 'workingday': [], 'weathersit': [], 'temp': [], 
+            'atemp': [], 'hum': [], 'windspeed': [], 'casual': [], 
+            'registered': [], 'cnt': []
+        })
 
 # Load the data
 df = load_data()
