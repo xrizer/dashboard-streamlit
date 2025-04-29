@@ -7,6 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import calendar
+import os
 
 # Set page configuration
 st.set_page_config(
@@ -18,7 +19,9 @@ st.set_page_config(
 # Load data
 @st.cache_data
 def load_data():
-    day_df = pd.read_csv('./main_data.csv')
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, 'main_data.csv')
+    day_df = file_path
     day_df['dteday'] = pd.to_datetime(day_df['dteday'])
     
     # Create month name and day name
